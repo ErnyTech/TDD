@@ -1,0 +1,12 @@
+{
+    "name": "tdd",
+    "description": "TDLib on DLang!",
+	"copyright": "Copyright © 2019, Ernesto Castellotti",
+	"license": "MPL 2.0",
+    "authors": [
+		"Ernesto Castellotti"
+	],
+	"libs": [
+        "tdjson"
+	]
+}
