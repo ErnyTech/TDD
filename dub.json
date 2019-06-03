@@ -8,5 +8,14 @@
 	],
 	"libs": [
         "tdjson"
+	],
+	"dependencies": {
+		"vibe-d:data": "~>0.8.6-alpha.2"
+	},
+	"preBuildCommands-posix": [
+		"cd source/tdd && dub ../../generate/generatetdapi.d"
+	],
+	"postBuildCommands-posix": [
+		"rm source/tdd/tdapi.d"
 	]
 }

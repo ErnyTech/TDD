@@ -5,17 +5,17 @@ alias TdCallback = void delegate(string);
 
 class Client {
     private shared(TdCallback) tdCallback;
-    private shared(bool*) isStopped;
+    private shared(bool*) stopFlag;
     private shared(bool*) isRunning;
     private shared(double*) timeout;
-    public shared(void*) clientPtr;
+    private shared(void*) clientPtr;
 
     this() {
         import core.atomic : atomicStore;
         import tdd.c.td_json_client : td_json_client_create;
 
         this.clientPtr = cast(shared) td_json_client_create();
-        this.isStopped = new shared(bool)(true);
+        this.stopFlag = new shared(bool)(true);
         this.isRunning = new shared(bool)(false);
         setTdCallback(null);
         setTimeout(DEFAULT_TIMEOUT);
@@ -37,9 +37,9 @@ class Client {
             return;
         }
 
-        atomicStore(*this.isStopped, false);
+        atomicStore(*this.stopFlag, false);
         atomicStore(*this.isRunning, true);
-        spawn(&Client.implRun, &this.clientPtr, &this.tdCallback, this.isStopped, this.isRunning, this.timeout);   
+        spawn(&Client.implRun, &this.clientPtr, &this.tdCallback, this.stopFlag, this.isRunning, this.timeout);   
     }
 
     void init(TdCallback tdCallback) {
@@ -55,7 +55,6 @@ class Client {
 
     void setTdCallback(TdCallback tdCallback) {
         import core.atomic : atomicStore;
-        import std.stdio;
 
         atomicStore(this.tdCallback, tdCallback);
     }
@@ -74,9 +73,6 @@ class Client {
         import core.atomic : atomicLoad;
         import tdd.c.td_json_client : td_json_client_send;
         import tdd.c.utils : fromString;
-        import std.stdio;
-        
-        writeln(this.clientPtr);
 
         if(this.clientPtr == null) {
             return;
@@ -102,30 +98,32 @@ class Client {
     void stop() {
         import core.atomic : atomicLoad;
         import core.atomic : atomicStore;
-        import std.stdio;
 
-        if(!*this.isRunning || *this.isStopped) {
+        if(!*this.isRunning || *this.stopFlag) {
             return;
         }
 
-        atomicStore(*this.isStopped, true);
+        atomicStore(*this.stopFlag, true);
         while(atomicLoad(*this.isRunning)) {}
-        writeln("SHUTTING DOWN COMP");
     }
 
-    private static void implRun(shared(void**) clientPtr, shared(TdCallback*) tdCallback, shared(bool*) isStopped, shared(bool*) isRunning, shared(double*) timeout) {
+    bool isStopped() {
+        import core.atomic : atomicLoad;
+        
+        return atomicLoad(*this.stopFlag) && !atomicLoad(*isRunning);
+    }
+
+    private static void implRun(shared(void**) clientPtr, shared(TdCallback*) tdCallback, shared(bool*) stopFlag, shared(bool*) isRunning, shared(double*) timeout) {
        import std.concurrency : spawn;
        import std.array : empty;
        import core.atomic : atomicLoad;
        import core.atomic : atomicStore;
        import tdd.c.td_json_client : td_json_client_receive;
        import tdd.c.utils : toString;
-       import std.stdio;
        
        while(true) {
-           if(atomicLoad(*isStopped)) {
+           if(atomicLoad(*stopFlag)) {
                atomicStore(*isRunning, false);
-               writeln("SHUTTING DOWN");
                break;
            }
 
