@@ -15,7 +15,13 @@
 	"preBuildCommands-posix": [
 		"cd source/tdd && dub ../../generate/generatetdapi.d"
 	],
+	"preBuildCommands-windows": [
+		"cd source\\tdd && dub ..\\..\\generate\\generatetdapi.d"
+	],
 	"postBuildCommands-posix": [
 		"rm source/tdd/tdapi.d"
+	],
+	"postBuildCommands-windows": [
+		"del source\\tdd\\tdapi.d"
 	]
 }
